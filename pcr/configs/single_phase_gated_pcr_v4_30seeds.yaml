@@ -1,0 +1,4 @@
+schema: single_phase_gated_pcr_v4_seed_extension
+parent_config: configs/single_phase_gated_pcr_v4.yaml
+output_dir: results/single_phase_gated_pcr_v4_30seeds_20260915
+formal_seeds: [42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71]

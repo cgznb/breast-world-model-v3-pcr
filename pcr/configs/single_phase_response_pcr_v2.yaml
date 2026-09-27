@@ -1,0 +1,96 @@
+schema: single_phase_response_pcr_v2
+output_dir: results/single_phase_response_pcr_v2_20260915
+baseline_config: configs/single_phase_fmbcmri_pcr_v1.yaml
+baseline_run: results/single_phase_fmbcmri_pcr_v1_20260915
+gpu: 0
+gpu_memory_fraction: 0.28
+minimum_gpu_free_mib: 11000
+reserve_gib: 20
+extraction_batch_size: 8
+preprocess_workers: 2
+training_jobs: 2
+seeds:
+- 42
+- 43
+- 44
+- 45
+- 46
+- 47
+- 48
+- 49
+- 50
+- 51
+tuning_seeds:
+- 42
+- 43
+inner_folds: 3
+inner_fold_seed: 92026
+encoder_root: /path/to/research/MAM/FM-BCMRI
+encoder_checkpoint: /path/to/research/external_checkpoints/breast_MR_checkpoint.pth.tar
+primary_labels: /path/to/research/Datasets/manifest-1781750940386/ISPY2-Imaging-Cohort-1-Clinical-Data.xlsx
+ancillary_labels: /path/to/research/Datasets/qingyuan_acrin_registered_minimal_20260804/metadata/Full-Collection-Ancillary-Patient-Information-file.xlsx
+native_world_repo: /path/to/research/MAM/MeWM-ISPY2-DCE0-BiFlowNet-RF
+native_world_bundle: /path/to/research/MAM/MeWM-ISPY2-DCE0-BiFlowNet-RF/runs/first_post_world_compare_v1_20260914/shared/bundle.json
+rois:
+  tumor:
+    margin_mm: 5
+    minimum_side_mm: 48
+  context:
+    margin_mm: 15
+    minimum_side_mm: 64
+training:
+  epochs: 100
+  patience: 20
+  min_delta: 0.0001
+  batch_size: 64
+  lr: 0.0003
+  weight_decay: 0.01
+  dropout: 0.25
+  hidden_dim: 64
+  grad_clip: 1.0
+  objective: patient_mean_prefix_bce
+adaptation:
+  last_blocks: 1
+  rank: 4
+  alpha: 4
+  lr: 1.0e-05
+  head_lr: 0.0003
+  batch_size: 8
+  epochs: 60
+  roi: context
+arms:
+  clinical:
+    model: clinical
+    roi: context
+  image_linear_tumor:
+    model: linear
+    roi: tumor
+  image_linear_context:
+    model: linear
+    roi: context
+  image_gru_tumor:
+    model: gru
+    roi: tumor
+    clinical: false
+  image_gru_context:
+    model: gru
+    roi: context
+    clinical: false
+  fusion_gru_tumor:
+    model: gru
+    roi: tumor
+    clinical: true
+  fusion_gru_context:
+    model: gru
+    roi: context
+    clinical: true
+  fusion_gru_context_label_sensitivity:
+    model: gru
+    roi: context
+    clinical: true
+    exclude_conflicts_from_fit: true
+  fusion_gru_context_lora:
+    model: gru
+    roi: context
+    clinical: true
+    lora: true

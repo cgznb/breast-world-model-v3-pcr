@@ -1,0 +1,5 @@
+torch>=2.5
+numpy>=1.24
+PyYAML>=6.0
+# Optional original-style velocity backend: monai==1.5.1
+# Tests: pytest>=8

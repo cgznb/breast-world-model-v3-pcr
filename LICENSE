@@ -1,0 +1,39 @@
+License scope
+=============
+The newly authored observation-v3 implementation is provided under the MIT
+license below, except for the separately attributed materials listed here.
+
+- src/symm_observation/codec.py is an adapted inference subset of the
+  MeWM-derived VQ implementation in cgznb/symm-fm. It remains CC BY-NC 4.0.
+- upstream_reference/three_phase_symmflow.py is the original source reference
+  from the first_post_three_phase workflow of cgznb/symm-fm. The upstream
+  workflow's CC BY-NC 4.0 terms are retained.
+- src/symm_observation/layers.py retains the attribution notices for the
+  ConvNeXt/torchvision-derived building-block adaptations under their original
+  MIT/BSD terms. See licenses/.
+
+The MIT license on new code does NOT remove the noncommercial restriction on
+MeWM-derived components or grant any rights to datasets and pretrained weights.
+The attached publications and third-party pretrained weights are not included.
+
+MIT License
+===========
+Copyright (c) 2026 Observation-v3 contributors
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.

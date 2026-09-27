@@ -1,0 +1,71 @@
+base_config: configs/mewm_ispy2_full978_locked102_table2.yaml
+trajectory:
+  root: /path/to/research/MAM/MeWM-ISPY2-DCE0-BiFlowNet-RF/runs/ispy2_dce0_biflow_original_resume_no_early_stop_v2/generated_trajectories/full978_locked102_euler20_seed22026
+  schema: pillar_full978_biflow_trajectory_summary_v1
+  decoded_schema: pillar_full978_biflow_trajectory_decoded_v1
+  solver_steps: 20
+  expected_patients: 102
+  expected_future_targets: 296
+  expected_target_counts:
+    T1: 101
+    T2: 98
+    T3: 97
+  shared_real_t0_targets: 102
+  strategies:
+    direct_t0:
+      embeddings_dir: data/mewm_ispy2_full978_locked102/emb_pillar_biflow_direct_t0_euler20_seed22026
+    rollout_generated_dce0_real_ser:
+      embeddings_dir: data/mewm_ispy2_full978_locked102/emb_pillar_biflow_rollout_generated_dce0_real_ser_euler20_seed22026
+frozen_models:
+  seeds:
+  - 42
+  - 43
+  - 44
+  - 45
+  - 46
+  - 47
+  - 48
+  - 49
+  - 50
+  - 51
+  depths:
+  - name: T0
+    max_tp: 1
+    protocol: fixed_train_validation_split
+    folds: 1
+    variant: original_table2
+    residual_l2_weight: 0.0
+    checkpoint_template: results/mewm_ispy2_full978_locked102_table2/t0/seed_{seed}/global_tab_temporal/best.pt
+    baseline_predictions_template: results/mewm_ispy2_full978_locked102_table2/t0/seed_{seed}/global_tab_temporal/test_predictions.csv
+  - name: T0-T1
+    max_tp: 2
+    protocol: fixed_train_validation_split
+    folds: 1
+    variant: moderate
+    residual_l2_weight: 0.0
+    checkpoint_template: results/mewm_ispy2_full978_locked102_dual_strategy/independent/train/formal/t0_t1/variant_moderate/seed_{seed}/best.pt
+    baseline_predictions_template: results/mewm_ispy2_full978_locked102_dual_strategy/independent/evaluation/real/seed_{seed}/test_predictions.csv
+  - name: T0-T2
+    max_tp: 3
+    protocol: five_fold_probability_ensemble
+    folds: 5
+    variant: layerwise_adamw
+    residual_l2_weight: 0.0
+    checkpoint_template: results/mewm_ispy2_full978_locked102_independent_cv_regularization_v2/train/formal/t0_t2/variant_layerwise_adamw/seed_{seed}/fold_{fold}/best.pt
+    baseline_predictions_template: results/mewm_ispy2_full978_locked102_independent_cv_regularization_v2/evaluation/real/t0_t2/seed_{seed}/test_predictions.csv
+  - name: T0-T3
+    max_tp: 4
+    protocol: five_fold_probability_ensemble
+    folds: 5
+    variant: layerwise_adamw
+    residual_l2_weight: 0.0
+    checkpoint_template: results/mewm_ispy2_full978_locked102_t0_t3_layerwise_adamw_no_residual_10seed/train/formal/t0_t3/variant_layerwise_adamw/seed_{seed}/fold_{fold}/best.pt
+    baseline_predictions_template: results/mewm_ispy2_full978_locked102_t0_t3_layerwise_adamw_no_residual_10seed/evaluation/real/t0_t3/seed_{seed}/test_predictions.csv
+evaluation:
+  output_dir: results/mewm_ispy2_full978_locked102_frozen_mixed_no_residual_biflow_trajectories
+  sources:
+  - real
+  - direct_t0
+  - rollout_generated_dce0_real_ser
+  threshold: 0.5
+  standard_deviation: sample_ddof_1

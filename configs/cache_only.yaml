@@ -1,0 +1,50 @@
+schema: three_phase_observation_v3
+encoder:
+  patch: [2, 4, 4]
+  phase_dim: 128
+  phase_heads: 4
+  phase_depth: 2
+  dim: 384
+  heads: 6
+  depth: 12
+  predictor_dim: 384
+  predictor_heads: 6
+  predictor_depth: 6
+  readout_depth: 4
+  teacher_last_k: 4
+  checkpoint_blocks: true
+observation:
+  crop: [16, 32, 32]
+  local_weight: 1.0
+  global_weight: 1.0
+  reconstruction_weight: 0.25
+  domain_enabled: false
+  kinetics_weight: 0.0
+  segmentation_weight: 0.0
+  arcface_weight: 0.0
+  dann_weight: 0.0
+  require_phase_alignment: false
+velocity:
+  backend: monai
+  channels: [64, 128, 256, 256]
+  attention_levels: [false, false, true, true]
+  context_dim: 256
+  patient_tokens: 32
+  adapter_depth: 2
+  reverse_probability: 0.0
+  semantic_endpoint_weight: 0.0
+training:
+  device: cuda
+  precision: bf16
+  stage_a_steps: 20000
+  stage_b_steps: 100000
+  batch_size: 1
+  accumulation: 8
+  lr_a: 0.0002
+  lr_b: 0.0001
+  checkpoint_every: 1000
+  validate_every: 1000
+sampling:
+  steps: 20
+  method: euler
+  samples: 4

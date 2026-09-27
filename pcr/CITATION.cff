@@ -1,0 +1,18 @@
+cff-version: 1.2.0
+message: "If you use this code, please cite the paper below."
+title: "Longitudinal 3D Foundation Modeling for Neoadjuvant Breast Cancer Response Prediction from Serial DCE-MRI"
+authors:
+  - family-names: "Tito Cruz"
+    given-names: "Fidel Omar"
+  - family-names: "Ghafouri"
+    given-names: "Neda"
+  - family-names: "Wang"
+    given-names: "Zengyan"
+  - family-names: "Khosravi"
+    given-names: "Pegah"
+  - family-names: "Tian"
+    given-names: "Yu"
+  - family-names: "Chen"
+    given-names: "Chen"
+year: 2026
+# conference: AMAI (Applications of Medical AI) workshop, MICCAI 2026 — add DOI/pages when available.

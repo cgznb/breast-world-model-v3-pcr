@@ -1,0 +1,57 @@
+schema: registered_three_phase_roi32_fixed_pcr_v3
+output_dir: results/registered_three_phase_roi32_fixed_pcr_v3_20260918
+baseline_run: results/registered_three_phase_roi32_pcr_v1_20260917
+previous_run: results/registered_three_phase_roi32_pcr_optimization_v2_20260918
+direct_run: results/registered_three_phase_roi32_generated_pcr_v1_20260918
+sequential_run: results/registered_three_phase_roi32_sequential_pcr_v1_20260918
+expected_development: 764
+expected_holdout: 102
+depths: [1, 2, 3, 4]
+formal_seeds: [42, 43, 44, 45, 46, 47, 48, 49, 50, 51]
+jobs: 6
+device: cpu
+bootstrap_samples: 2000
+bootstrap_seed: 92026
+common_training:
+  epochs: 40
+  patience: 41
+  epoch_selection: fixed
+  min_delta: 0.0
+  batch_size: 64
+  lr: 0.0003
+  optimizer: adamw_layerwise
+  scheduler_t_max: 40
+  scheduler_eta_min: 0.0
+  grad_clip: 1.0
+  prefix_dropout_probability: 0.0
+primary_overrides:
+  1: {}
+  2:
+    use_clinical_token: true
+    dropout: 0.35
+    embedding_dropout: 0.15
+    residual_logit_limit: 1.5
+    residual_scale_init: 0.25
+    residual_l2_weight: 0.05
+    positive_class_weight: 1.0
+    projection_weight_decay: 0.01
+    weight_decay: 0.003
+  3:
+    use_clinical_token: true
+    dropout: 0.35
+    embedding_dropout: 0.15
+    residual_logit_limit: 1.5
+    residual_scale_init: 0.25
+    residual_l2_weight: 0.05
+    positive_class_weight: 1.0
+    projection_weight_decay: 0.01
+    weight_decay: 0.003
+  4:
+    use_clinical_token: true
+    dropout: 0.30
+    embedding_dropout: 0.15
+    residual_logit_limit: null
+    residual_l2_weight: 0.05
+    positive_class_weight: 1.0
+    projection_weight_decay: 0.005
+    weight_decay: 0.001

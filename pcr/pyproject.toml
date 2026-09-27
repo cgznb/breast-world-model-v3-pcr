@@ -1,0 +1,27 @@
+[project]
+name = "longitudinal_temporal_pillar"
+version = "0.1.0"
+description = "Longitudinal 3D foundation modeling (frozen Pillar-0 + Temporal Dynamics Network) for pathologic complete response prediction from serial breast DCE-MRI."
+requires-python = ">=3.10,<3.12"
+dependencies = [
+    "torch>=2.0.0",
+    "transformers==4.53.2",
+    "huggingface_hub",
+    "timm",
+    "einops",
+    "nibabel",
+    "SimpleITK",
+    "numpy",
+    "pandas",
+    "scikit-learn",
+    "openpyxl",
+    "pyyaml",
+    "tqdm",
+]
+
+[project.optional-dependencies]
+test = ["pytest"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

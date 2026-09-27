@@ -1,0 +1,27 @@
+schema: registered_three_phase_roi32_overfit_ablation_v4
+output_dir: results/registered_three_phase_roi32_overfit_ablation_v4_20260918
+baseline_run: results/registered_three_phase_roi32_pcr_v1_20260917
+reference_run: results/registered_three_phase_roi32_fixed_pcr_v3_20260918
+reference_config: configs/registered_three_phase_fixed_pcr_v3.yaml
+historical_summary: results/registered_three_phase_roi32_sequential_pcr_v1_20260918/evaluation/per_seed_input_folds/holdout_seed_summary.csv
+formal_seeds: [42, 43, 44, 45, 46, 47, 48, 49, 50, 51]
+expected_development: 764
+expected_holdout: 102
+depth: 4
+epochs: 40
+jobs: 6
+device: cpu
+bootstrap_samples: 2000
+bootstrap_seed: 9202618
+descriptive_auc_tolerance: 0.005
+arms:
+  bounded_residual:
+    residual_logit_limit: 1.0
+    residual_scale_init: 0.1
+  residual_penalty:
+    residual_l2_weight: 0.1
+  prefix_dropout:
+    prefix_dropout_probability: 0.25
+  compact_head:
+    proj_dim: 32
+    sig_dim: 16

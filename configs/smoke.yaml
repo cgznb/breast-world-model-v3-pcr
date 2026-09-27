@@ -1,0 +1,61 @@
+schema: three_phase_observation_v3
+encoder:
+  patch: [1, 2, 2]
+  phase_dim: 12
+  phase_heads: 3
+  phase_depth: 2
+  dim: 48
+  heads: 4
+  depth: 3
+  predictor_dim: 48
+  predictor_heads: 4
+  predictor_depth: 2
+  readout_depth: 2
+  teacher_last_k: 2
+  checkpoint_blocks: false
+  max_tokens: 1024
+observation:
+  crop: [4, 4, 4]
+  mask_ratio: 0.5
+  domain_enabled: false
+  kinetics_weight: 0.1
+  segmentation_weight: 0.1
+  arcface_weight: 0.02
+  dann_weight: 0.02
+  phenotype_classes: 2
+  phenotype_definition: synthetic_current_visit_class
+  domain_classes: 2
+  domain_definition: scanner
+  supervised_start_step: 0
+  require_phase_alignment: true
+velocity:
+  backend: native
+  channels: [16, 32]
+  attention_levels: [false, true]
+  num_res_blocks: 2
+  attention_heads: 4
+  context_dim: 48
+  patient_tokens: 8
+  adapter_depth: 2
+  checkpoint_blocks: false
+  reverse_probability: 0.5
+  semantic_endpoint_weight: 0.05
+  semantic_start_step: 0
+  semantic_every: 1
+training:
+  device: cpu
+  precision: fp32
+  stage_a_steps: 3
+  stage_b_steps: 3
+  batch_size: 1
+  accumulation: 2
+  warmup_steps: 1
+  checkpoint_every: 1
+  validate_every: 3
+  validation_cases: 2
+  cpu_threads: 1
+  log_every: 1
+sampling:
+  steps: 2
+  method: heun
+  samples: 2

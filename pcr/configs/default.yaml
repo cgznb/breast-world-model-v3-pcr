@@ -1,0 +1,23 @@
+# Hyperparameters for the Temporal Dynamics Network (scripts/run_experiments.py).
+# model_type, input_dim, and clinical_dim are set per row by the runner from the loaded
+# embeddings, so the same config serves every table cell.
+downstream:
+  # per-timepoint embedding projection width
+  proj_dim: 128
+  hidden_dim: 64            # T0Head MLP width
+  sig_dim: 64              # TDN disease-signature / transformer width
+  n_layers: 1              # TDN transformer layers
+  n_heads: 4
+
+  # residual clinical prior (the +tab+temporal cell):  logit = prior(clinical) + alpha * TDN(imaging)
+  use_prior: true
+
+  # optimization
+  epochs: 150
+  patience: 50
+  train_loss_floor: 0.01
+  batch_size: 64
+  lr: 5.0e-4
+  weight_decay: 1.0e-4
+  dropout: 0.2
+  grad_clip: 1.0

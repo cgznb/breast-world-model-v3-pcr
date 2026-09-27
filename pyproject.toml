@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "symm-fm-threephase-observation-v3"
+version = "0.3.0"
+description = "Single-visit 3D observation pretraining and separate conditional three-phase SymmFlow"
+requires-python = ">=3.10"
+dependencies = ["torch>=2.5", "numpy>=1.24", "PyYAML>=6.0"]
+
+[project.optional-dependencies]
+monai = ["monai==1.5.1"]
+test = ["pytest>=8"]
+pcr = ["pandas>=2", "scikit-learn>=1.4", "SimpleITK>=2.3", "nibabel>=5.2", "transformers==4.53.2", "huggingface_hub", "timm", "einops", "openpyxl>=3.1", "tqdm", "scipy", "matplotlib", "omegaconf>=2.3"]
+imaging = ["nibabel>=5.2"]
+
+[project.scripts]
+symm-observation = "symm_observation.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]

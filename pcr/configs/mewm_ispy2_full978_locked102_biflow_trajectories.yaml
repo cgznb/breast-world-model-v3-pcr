@@ -1,0 +1,35 @@
+schema: pillar_full978_locked102_biflow_trajectories_v1
+cohort:
+  test_ids: data/mewm_ispy2_full978_locked102/splits/test_ids.txt
+  metadata_csv: data/mewm_ispy2_full978_locked102/metadata_enriched.csv
+  selected_registered_manifest: data/mewm_ispy2_full978_locked102/registered_visits.csv
+  registered_source_manifests:
+  - /path/to/research/Datasets/manifest-1781750940386/ISPY2/processed_ispy2_world_phase3_scan_phase_aligned_multires_registered_to_T0/manifest/ispy2_breastdcedl_registered_to_T0_manifest.csv
+  - /path/to/research/Datasets/qingyuan_acrin_registered_minimal_20260804/metadata/strict_a_20260804/combined_registered_manifest.csv.backup_20260829_132931
+biflow:
+  repo: /path/to/research/MAM/MeWM-ISPY2-DCE0-BiFlowNet-RF
+  config: /path/to/research/MAM/MeWM-ISPY2-DCE0-BiFlowNet-RF/configs/ispy2_dce0_biflow_original_resume_no_early_stop_v2.yaml
+  checkpoint: /path/to/research/MAM/MeWM-ISPY2-DCE0-BiFlowNet-RF/runs/ispy2_dce0_biflow_original_resume_no_early_stop_v2/checkpoints/best-083.ckpt
+  bundle_json: /path/to/research/MAM/MOTFM-tumor-first/runs/registered_strict_a_z96_target_oracle/data_bundle.qingyuan_20260804.val102_high_transition/bundle.json
+  phase_manifest_csv: /path/to/research/Datasets/qingyuan_acrin_registered_minimal_20260804/metadata/strict_a_20260804/combined_registered_manifest.csv.backup_20260829_132931
+  roi_cache_dir: /path/to/research/MAM/MOTFM-tumor-first/runs/registered_strict_a_z96_target_oracle/roi_cache
+  crop_plans_json: /path/to/research/MAM/MOTFM-tumor-first/runs/registered_strict_a_z96_target_oracle/data_bundle.qingyuan_20260804.val102_high_transition/crop_plans.json
+  normalization_json: /path/to/research/MAM/MOTFM-tumor-first/runs/registered_strict_a_z96_target_oracle/data_bundle.qingyuan_20260804.val102_high_transition/normalization.json
+  strict_spacing_xyz:
+  - 0.7032
+  - 0.7032
+  - 2.0
+generation:
+  strategies:
+  - direct_t0
+  - rollout_generated_dce0_real_ser
+  solver_steps: 20
+  base_seed: 22026
+  batch_size: 2
+  output_dir: /path/to/research/MAM/MeWM-ISPY2-DCE0-BiFlowNet-RF/runs/ispy2_dce0_biflow_original_resume_no_early_stop_v2/generated_trajectories/full978_locked102_euler20_seed22026
+  expected_checkpoint_epoch: 83
+  expected_checkpoint_global_step: 97104
+  target_latent_policy: never_read
+  t0_policy: real_not_generated
+  rollout_policy: generated_dce0_real_ser
+  rollout_foreground_policy: real_source_visit_valid_foreground

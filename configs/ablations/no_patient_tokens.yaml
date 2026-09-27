@@ -1,0 +1,3 @@
+extends: ../cache_only.yaml
+velocity:
+  source_tokens: false

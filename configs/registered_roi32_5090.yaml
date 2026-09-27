@@ -1,0 +1,30 @@
+# Physical batches are finalized by measured real-data GPU profiling.
+extends: cache_only.yaml
+encoder:
+  checkpoint_blocks: false
+observation:
+  crop: [6, 24, 24]
+  require_phase_alignment: true
+velocity:
+  checkpoint_blocks: false
+training:
+  seed: 20260920
+  device: cuda
+  precision: bf16
+  reference_batch_size: 8
+  stage_batches:
+    A: 32
+    B: 64
+  batch_size: 1
+  accumulation: 1
+  stage_a_steps: 20000
+  stage_b_steps: 100000
+  warmup_steps: 1000
+  checkpoint_every: 2000
+  validate_every: 2000
+  validation_cases: 102
+  log_every: 10
+  cpu_threads: 4
+  strict_determinism: false
+  preload_latents: true
+  patient_balanced_validation: true

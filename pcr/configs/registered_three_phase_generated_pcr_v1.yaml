@@ -1,0 +1,15 @@
+schema: registered_three_phase_generated_pcr_v1
+output_dir: results/registered_three_phase_roi32_generated_pcr_v1_20260918
+source_pcr_config: configs/registered_three_phase_roi32_pcr_v1.yaml
+gpu: 0
+solver: heun
+sampling_steps: 25
+draws: 4
+generation_seed: 1729
+bootstrap_seed: 20260918
+bootstrap_samples: 2000
+reserve_gib: 15
+source_policy: direct_T0
+support_policy: source_T0_per_phase_nonzero_foreground
+time_policy: existing_recorded_followup_intervals
+

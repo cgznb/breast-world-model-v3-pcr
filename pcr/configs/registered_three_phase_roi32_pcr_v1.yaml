@@ -1,0 +1,39 @@
+schema: registered_three_phase_roi32_pcr_v1
+output_dir: results/registered_three_phase_roi32_pcr_v1_20260917
+world_repo: ../vendor/mewm-ispy2
+world_config: ../vendor/mewm-ispy2/configs/registered_three_phase_roi32_v1.yaml
+source_cohort: data/mewm_ispy2_full978_locked102
+source_folds: results/mewm_ispy2_full978_locked102_all_depths_best200_fivefold/folds
+recipes_config: configs/first_post_pcr_v1.yaml
+gpu: 0
+preprocess_workers: 2
+training_jobs: 10
+reserve_gib: 15
+seeds:
+- 42
+- 43
+- 44
+- 45
+- 46
+- 47
+- 48
+- 49
+- 50
+- 51
+expected_development: 764
+expected_holdout: 102
+expected_visits: 3039
+phase_order:
+- pre_aqc0
+- first_post_aqc1
+- metadata_late
+shape_zyx:
+- 32
+- 128
+- 128
+spacing_zyx_mm:
+- 2.0
+- 0.7032
+- 0.7032
+preprocessing: physical_1mm_then_center_pad_crop
+encoder: frozen_pillar_float32

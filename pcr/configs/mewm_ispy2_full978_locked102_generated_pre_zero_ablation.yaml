@@ -1,0 +1,27 @@
+# Channel-level ablation of future pre/DCE0. T0, real early/late, clinical
+# features, elapsed days, masks, and all frozen pCR checkpoints stay unchanged.
+frozen_config: configs/mewm_ispy2_full978_locked102_frozen_mixed_no_residual_biflow_trajectories.yaml
+
+reference:
+  result_dir: results/mewm_ispy2_full978_locked102_frozen_mixed_no_residual_biflow_trajectories
+  sources: [real, direct_t0, rollout_generated_dce0_real_ser]
+
+zero_pre:
+  embeddings_dir: data/mewm_ispy2_full978_locked102/emb_pillar_zero_future_pre
+  expected_patients: 102
+  expected_future_embeddings: 296
+  expected_target_counts: {T1: 101, T2: 98, T3: 97}
+  batch_size: 6
+
+evaluation:
+  output_dir: results/mewm_ispy2_full978_locked102_generated_pre_zero_ablation
+  threshold: 0.5
+  standard_deviation: sample_ddof_1
+  paired_patient_bootstrap:
+    repetitions: 10000
+    seed: 20260904
+    stratify_by_label: true
+    comparisons:
+      - [direct_t0, zero_pre]
+      - [rollout_generated_dce0_real_ser, zero_pre]
+      - [real, zero_pre]
