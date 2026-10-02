@@ -1,0 +1,71 @@
+schema: responsewm_v3
+network:
+  backend: native
+  time_basis: stage_index
+  history_depth: 6
+  semantic_depth: 6
+  checkpoint_blocks: true
+  dropout: 0.2
+training:
+  seed: 20261011
+  device: cuda
+  precision: bf16
+  threads: 4
+  batch_size: 32
+  accumulation: 1
+  representation_steps: 200
+  flow_steps: 3000
+  readout_steps: 150
+  joint_steps: 400
+  validation_every: 200
+  checkpoint_every: 10
+  log_every: 1
+  validation_cases: 102
+  validate_samples: 4
+  reverse_probability: 0.0
+  joint_image_scope: decoder
+  allow_synthetic: false
+  weight_decay: 0.05
+  warmup: 10
+sampling:
+  train_samples: 2
+  train_steps: 20
+  inference_samples: 8
+  inference_steps: 20
+  method: heun
+loss:
+  anatomy: 0.0
+  pillar: 0.0
+multistage:
+  representation_pcr_weight: 0.1
+  early_stopping_patience: 4
+  early_stopping_min_delta: 0.001
+  rollout_every: 8
+protocol:
+  primary_origin: 0
+  selection_metric: t0_marginal_nll
+  validation_seed: 20261001
+  validation_batch_size: 32
+  representation_lr: 3.0e-05
+  readout_lr: 1.0e-05
+  readout_scope: last_block
+  joint_readout_scope: last_block
+  readout_weight_decay: 0.05
+  residual_logit_limit: 2.0
+  residual_penalty: 0.01
+  latent_mean_weight: 0.1
+  latent_energy_weight: 0.05
+  generation_guard_ratio: 1.1
+  image_eval_cases: 8
+  imaging_manifest: data/imaging_eval/manifest.json
+  codec_path: codec.pt
+  stage_batch_sizes:
+    representation: 160
+    flow: 32
+    readout: 192
+    joint: 32
+  stage_validation_every:
+    representation: 10
+    flow: 150
+    readout: 10
+    joint: 50

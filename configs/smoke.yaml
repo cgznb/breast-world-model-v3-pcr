@@ -1,61 +1,108 @@
-schema: three_phase_observation_v3
+schema: responsewm_v1
 encoder:
-  patch: [1, 2, 2]
-  phase_dim: 12
-  phase_heads: 3
-  phase_depth: 2
-  dim: 48
-  heads: 4
-  depth: 3
-  predictor_dim: 48
-  predictor_heads: 4
+  phase_channels: 8
+  stem_width: 12
+  widths:
+  - 12
+  - 24
+  depths:
+  - 2
+  - 2
+  heads:
+  - 3
+  - 3
+  window:
+  - 1
+  - 2
+  - 2
+  token_grid:
+  - 1
+  - 2
+  - 2
+  dim: 24
+  query_heads: 3
+  anatomy_tokens: 2
+  disease_tokens: 4
   predictor_depth: 2
-  readout_depth: 2
-  teacher_last_k: 2
+  phase_mixer_depth: 2
+  drop_path: 0.0
   checkpoint_blocks: false
-  max_tokens: 1024
-observation:
-  crop: [4, 4, 4]
   mask_ratio: 0.5
-  domain_enabled: false
-  kinetics_weight: 0.1
-  segmentation_weight: 0.1
-  arcface_weight: 0.02
-  dann_weight: 0.02
-  phenotype_classes: 2
-  phenotype_definition: synthetic_current_visit_class
-  domain_classes: 2
-  domain_definition: scanner
-  supervised_start_step: 0
-  require_phase_alignment: true
-velocity:
+  phase_drop_probability: 0.25
+network:
   backend: native
-  channels: [16, 32]
-  attention_levels: [false, true]
+  time_basis: calendar_days
+  use_future: true
+  channels:
+  - 16
+  - 24
+  - 32
   num_res_blocks: 2
   attention_heads: 4
-  context_dim: 48
-  patient_tokens: 8
-  adapter_depth: 2
+  history_depth: 2
+  semantic_depth: 4
+  readout_depth: 2
+  max_visits: 8
+  dropout: 0.1
+  coupling: true
+  readout_source: joint
   checkpoint_blocks: false
-  reverse_probability: 0.5
-  semantic_endpoint_weight: 0.05
-  semantic_start_step: 0
-  semantic_every: 1
+  pillar_dim: 16
+  future_residual_limit: 3.0
+  clinical_prior: true
+loss:
+  reconstruction: 1.0
+  phase_difference: 0.1
+  masked_jepa: 1.0
+  variance: 0.1
+  covariance: 0.01
+  anatomy: 0.01
+  pillar: 0.1
+  dense_teacher: 0.0
+  segmentation: 0.0
+  kinetics: 0.0
+  biomarkers: 0.0
+  fm_image: 1.0
+  fm_state: 1.0
+  repa: 0.05
+  real_pcr: 1.0
+  marginal_pcr: 1.0
+  observed_pcr: 0.25
+  grounding: 0.1
+  energy: 0.05
+  prediction_grounding: 0.02
+  residual_l2: 0.01
+  per_sample_bce: false
 training:
+  seed: 20260928
   device: cpu
   precision: fp32
-  stage_a_steps: 3
-  stage_b_steps: 3
-  batch_size: 1
-  accumulation: 2
-  warmup_steps: 1
+  threads: 2
+  batch_size: 2
+  accumulation: 1
+  lr: 0.0001
+  joint_lr: 1.0e-05
+  weight_decay: 0.01
+  grad_clip: 1.0
+  warmup: 100
+  ema_decay: 0.995
+  representation_steps: 2
+  flow_steps: 2
+  readout_steps: 2
+  joint_steps: 2
+  validation_every: 2
   checkpoint_every: 1
-  validate_every: 3
-  validation_cases: 2
-  cpu_threads: 1
   log_every: 1
+  validation_cases: 2
+  reverse_probability: 0.25
+  joint_image_scope: decoder
+  strict_determinism: false
+  validate_samples: 2
+  selection_generation_weight: 0.05
+  allow_synthetic: true
 sampling:
-  steps: 2
+  train_samples: 2
+  train_steps: 2
+  inference_samples: 2
+  inference_steps: 2
   method: heun
-  samples: 2

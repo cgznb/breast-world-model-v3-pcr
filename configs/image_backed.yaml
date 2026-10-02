@@ -1,5 +1,0 @@
-extends: cache_only.yaml
-observation:
-  domain_enabled: true
-  kinetics_weight: 0.1
-  require_phase_alignment: true

@@ -1,0 +1,83 @@
+schema: responsewm_v3
+encoder:
+  stem_width: 12
+  widths:
+  - 12
+  - 24
+  - 36
+  depths:
+  - 2
+  - 2
+  - 2
+  heads:
+  - 3
+  - 3
+  - 3
+  window:
+  - 1
+  - 2
+  - 2
+  token_grid:
+  - 1
+  - 2
+  - 2
+  dim: 24
+  query_heads: 3
+  anatomy_tokens: 2
+  disease_tokens: 4
+  predictor_depth: 2
+  phase_mixer_depth: 2
+  checkpoint_blocks: false
+network:
+  backend: native
+  time_basis: stage_index
+  channels:
+  - 16
+  - 24
+  - 32
+  num_res_blocks: 2
+  attention_heads: 4
+  history_depth: 2
+  semantic_depth: 6
+  readout_depth: 2
+  dropout: 0.1
+  checkpoint_blocks: false
+  pillar_dim: 16
+training:
+  seed: 20260929
+  device: cpu
+  precision: fp32
+  threads: 2
+  batch_size: 1
+  accumulation: 1
+  representation_steps: 2
+  flow_steps: 3
+  readout_steps: 2
+  joint_steps: 2
+  validation_every: 3
+  checkpoint_every: 1
+  log_every: 1
+  validation_cases: 2
+  validate_samples: 2
+  reverse_probability: 0.0
+  allow_synthetic: true
+sampling:
+  train_samples: 2
+  train_steps: 2
+  inference_samples: 2
+  inference_steps: 2
+  method: heun
+loss:
+  anatomy: 0.0
+  pillar: 0.0
+multistage:
+  memory_tokens: 8
+  global_tokens: 2
+  assimilation_depth: 2
+  condition_depth: 2
+  rollout_every: 1
+  early_stopping_patience: 0
+protocol:
+  image_eval_cases: 0
+  validation_batch_size: 2
+  readout_scope: last_block

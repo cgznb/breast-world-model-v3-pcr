@@ -1,0 +1,17 @@
+{
+  "kind": "document_consistency_check_only",
+  "date": "2026-09-29",
+  "base_commit": "841458cb8e06e131af2a2248dc853f8476b2e0d0",
+  "sections": 26,
+  "acceptance_requirements": 60,
+  "main_document_lines": 1279,
+  "main_document_characters": 49548,
+  "parsed_json_examples": 1,
+  "parsed_python_pseudocode_examples": 4,
+  "proposed_yaml_parsed": true,
+  "architecture_config_consistency_checked": true,
+  "model_code_modified": false,
+  "model_tests_executed": false,
+  "clinical_validation": false,
+  "note": "Only the handoff documents and configuration draft were checked. T01-T60 are future implementation requirements, not passed tests."
+}

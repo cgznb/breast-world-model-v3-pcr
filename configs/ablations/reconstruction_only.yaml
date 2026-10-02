@@ -1,5 +1,0 @@
-extends: ../cache_only.yaml
-observation:
-  local_weight: 0.0
-  global_weight: 0.0
-  reconstruction_weight: 1.0

@@ -1,3 +1,0 @@
-extends: ../cache_only.yaml
-velocity:
-  semantic_endpoint_weight: 0.05

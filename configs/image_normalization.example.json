@@ -1,0 +1,11 @@
+{
+  "already_normalized": false,
+  "source_only_geometry": false,
+  "vq_sha256": "REPLACE_WITH_MATCHING_VQ_FILE_SHA256",
+  "phase_order": [
+    "pre_aqc0",
+    "first_post_aqc1",
+    "metadata_late"
+  ],
+  "note": "Replace only after checking your original VQ-matched intensity, foreground and physical-space preprocessing."
+}

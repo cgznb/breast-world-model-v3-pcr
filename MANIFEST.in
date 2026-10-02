@@ -1,0 +1,9 @@
+include README.md README_ZH.md LICENSE joint.py RELEASE_MANIFEST.json
+include CHANGELOG_MULTISTAGE_V2.md IMPLEMENTATION_REPORT.md
+recursive-include configs *.yaml *.json
+recursive-include scripts *.py
+recursive-include tests *.py
+recursive-include docs *.md *.json *.txt *.yaml *.png *.svg *.pdf
+recursive-include licenses *
+recursive-include reports *.json *.xml
+global-exclude __pycache__ *.py[cod]

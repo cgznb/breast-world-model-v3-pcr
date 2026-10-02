@@ -1,0 +1,32 @@
+schema: responsewm_v1
+network:
+  backend: native
+  time_basis: stage_index
+  checkpoint_blocks: true
+training:
+  seed: 20260928
+  device: cuda
+  precision: bf16
+  threads: 4
+  batch_size: 4
+  accumulation: 1
+  representation_steps: 10000
+  flow_steps: 30000
+  readout_steps: 3000
+  joint_steps: 5000
+  validation_every: 250
+  checkpoint_every: 100
+  log_every: 10
+  validation_cases: 102
+  validate_samples: 4
+  joint_image_scope: decoder
+  allow_synthetic: false
+sampling:
+  train_samples: 2
+  train_steps: 20
+  inference_samples: 8
+  inference_steps: 20
+  method: heun
+loss:
+  anatomy: 0.0
+  pillar: 0.0

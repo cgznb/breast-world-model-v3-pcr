@@ -1,0 +1,84 @@
+{
+  "phase_order": [
+    "pre_aqc0",
+    "first_post_aqc1",
+    "metadata_late"
+  ],
+  "clinical_features": [
+    "age",
+    "hr_positive",
+    "her2_positive"
+  ],
+  "action_features": [
+    "taxane_planned",
+    "anthracycline_planned"
+  ],
+  "latent_shape": [
+    24,
+    8,
+    32,
+    32
+  ],
+  "vq_identity": "sha256:REPLACE_WITH_MATCHING_VQ_FILE_SHA256",
+  "time_basis": "stage_index",
+  "schema": "responsewm_request_v1",
+  "input": {
+    "landmark_day": 0,
+    "observed": [
+      {
+        "day": 0,
+        "available_at": 0,
+        "latent": "/absolute/path/to/continuous_T0_latent.npy"
+      }
+    ],
+    "clinical": [
+      47,
+      1,
+      null
+    ],
+    "clinical_known_at": [
+      0,
+      0,
+      null
+    ],
+    "queries": [
+      {
+        "day": 1,
+        "known_at": 0,
+        "actions": [
+          null,
+          null
+        ],
+        "actions_known_at": [
+          null,
+          null
+        ]
+      },
+      {
+        "day": 2,
+        "known_at": 0,
+        "actions": [
+          null,
+          null
+        ],
+        "actions_known_at": [
+          null,
+          null
+        ]
+      },
+      {
+        "day": 3,
+        "known_at": 0,
+        "actions": [
+          null,
+          null
+        ],
+        "actions_known_at": [
+          null,
+          null
+        ]
+      }
+    ],
+    "source_only_geometry": false
+  }
+}

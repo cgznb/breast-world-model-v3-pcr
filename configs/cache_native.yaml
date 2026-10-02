@@ -1,5 +1,0 @@
-extends: cache_only.yaml
-velocity:
-  backend: native
-  channels: [128, 256, 384]
-  attention_levels: [false, false, true]

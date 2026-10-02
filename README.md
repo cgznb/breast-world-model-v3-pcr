@@ -1,51 +1,57 @@
-# Breast World Model V3 + pCR
+# Breast Response World Model V3
 
-三相乳腺 MRI 世界模型 V3，以及完整的外部 PCR 预测代码。
-本次快照整理于 2026-09-27，使用实际 ROI32 A/B 工作流。
+**Version 3.0.0** models longitudinal breast MRI and predicts final pathological complete response (pCR). The primary deployment task uses **real T0 MRI and baseline clinical information**, generates possible T1–T3 trajectories, and averages their pCR probabilities.
 
-## 代码组成
+[中文首页](README_ZH.md) · [Chinese run guide](docs/V3_RUN_ZH.md) · [V3 protocol](docs/MULTISTAGE_V3_PROTOCOL_ZH.md) · [Release notes](docs/RELEASE_V3_20261002.md)
 
-| 目录 | 内容 |
-| --- | --- |
-| `src/symm_observation/` | 单访视 JEPA 表征、StateAdapter、SymmFlow、VQ 接口、训练与推理 |
-| `configs/registered_roi32_5090.yaml` | 实际 V3 ROI32 配置 |
-| `pcr/` | 冻结 Pillar、TDN、临床先验、训练、预测与验证代码 |
-| `vendor/mewm-ispy2/` | 原 ROI32 数据、预处理和 VQ 依赖源码与许可 |
-| `tests/` | 表征、生成、数据合同和集成测试 |
+![V3 architecture](docs/figures/breast-v3-detailed-framework.png)
 
-A 阶段仅学习当前访视：三相 patch 编码、跨相位 Transformer 和 12 层 ViT，
-配合同访视双裁剪 JEPA 与重建。B 阶段冻结 A 的 EMA 编码器，用 StateAdapter
-聚合成 32 个 patient tokens，再结合临床条件驱动双分支 SymmFlow。
-V3 的 A 阶段没有内部 PCR 头；PCR 由 `pcr/` 的独立分类流程完成。
+[Vector PDF](docs/figures/breast-v3-detailed-framework.pdf) · [Editable SVG](docs/figures/breast-v3-detailed-framework.svg)
 
-## 安装和运行
+## Architecture and training
 
-推荐 Python 3.11；本次基础代码与 PCR 单元检查使用 Python 3.12。
-PyTorch 请按设备安装；正式生成使用 MONAI 后端。
+Each visit contains three MRI enhancement phases. A frozen VQ codec produces continuous latents of shape `[24,8,32,32]`. A shared ConvNeXt/Swin encoder, clinical tokens and an event-causal history Transformer construct the patient state. A native 3D U-Net and six-block semantic flow Transformer jointly generate the next image latent and disease tokens through **three bidirectional attention bridges**. The generator advances T0→T1→T2→T3 with 20-step Heun integration per interval.
+
+Generated states drive subsequent intervals. The primary T0 marginal pCR readout keeps the **real T0 memory** and reads the full generated disease trajectory. Its logit is a training-only fitted clinical prior plus a bounded learned residual. New real MRI follows a separate observation-assimilation path; future ground truth is not supplied to free generation.
+
+| Stage | Update and selection policy | Physical batch |
+|---|---|---:|
+| A: representation | Reconstruction/JEPA and auxiliary pCR; LR `3e-5` | 160 |
+| B: generation | Coupled flow, grounding and free-generation objectives; selection against T0 persistence | 32 |
+| C: readout | Last pCR Transformer block and output; LR `1e-5`; entry checkpoint may remain best | 192 |
+| D: joint | Conservative generator/state/readout updates; entry may remain best; generation degradation guard | 32 |
+
+B has zero marginal-pCR loss weight, but observed-update pCR supervision still backpropagates through the frozen readout into state/generation modules. C/D selection uses prespecified T0 full-future marginal NLL; D also requires generation error within 1.10× its entry value. The multiseed queue allows two A jobs concurrently and gives B/C/D exclusive stage access, including evaluation. Batch sizes count tasks, not distinct patients; missing visits remain missing.
+
+## Install and run
+
+Use Linux and Python **3.11+**. Install a PyTorch/CUDA build compatible with your GPU before installing this package. MONAI is optional; V3 production uses the native backend.
 
 ```bash
-python -m pip install -e '.[test,monai,pcr]'
+python -m pip install -e '.[test]'
 python -m pytest -q
-python world.py smoke --output /tmp/world-v3-smoke
-python world.py --help
-python pcr/run.py --help
+python joint.py smoke-v3 \
+  --config configs/multistage_smoke_v3.yaml \
+  --output runs/v3_smoke
 ```
 
-真实数据训练与生成命令见 [GENERATION_GUIDE.md](GENERATION_GUIDE.md)，
-现有 ROI32 的适配见 [docs/REGISTERED_ROI32_LOCAL.md](docs/REGISTERED_ROI32_LOCAL.md)。
-外部 PCR 的训练、特征提取和独立预测见 [pcr/README.md](pcr/README.md)。
-网络设计见 [docs/DESIGN_ZH.md](docs/DESIGN_ZH.md)，本次验证见 [docs/VALIDATION.md](docs/VALIDATION.md)。
+Choose a new smoke output directory. Smoke data and scores are synthetic engineering checks. Actual release verification is recorded in [reports/release_validation.json](reports/release_validation.json).
 
-## 可复现范围
+After preparing private data and the imaging bundle as described in the [run guide](docs/V3_RUN_ZH.md):
 
-上传包含源码、配置、测试和说明。患者数据、特征缓存、真实划分及所有训练权重均需在本地提供。
-生产入口要求匹配的 VQ 和生成器权重；合成 smoke 只能验证工程链路。
-历史环境路径已替换为通用占位符；历史完整队列脚本需要设置对应的数据和实验输出路径。
-`GENERATION_GUIDE.md` 的原交付时期说明属于历史背景，本次整理没有重新进行完整临床训练。
+```bash
+python joint.py train-v3 \
+  --config configs/ispy2_multistage_native_v3.yaml \
+  --manifest data/trajectories/patient_trajectories_v2.json \
+  --output runs/v3_primary --stage all
+```
 
-V2/V3 的生成器版本与 PCR 的 V1/V4 分类器版本是不同的命名。
-PCR 使用完整生成轨迹的概率平均，再做同一种子下五折模型的概率平均。
-生成器开发队列不是独立端到端测试集。
+Resume with the same command plus `--resume`. V3 reuses the V2 **patient data schema** and preparation script; V3 checkpoints must be loaded by V3 code. Historical `train-v2`, `evaluate-v2`, `forecast-v2` and related checkpoint commands are not V3 interfaces.
 
-许可见 [LICENSE](LICENSE)、`licenses/`、`pcr/LICENSE` 和 `vendor/mewm-ispy2/LICENSE.md`。
-新增入口的说明见 [docs/RELEASE.md](docs/RELEASE.md)。
+## Release scope
+
+This release includes source, configurations, tests, documentation and diagrams. **Patient data, patient-level results and trained weights are not included.** It does not assert that ongoing training has finished or that V3 outperforms a baseline. The development protocol uses 764 training and 102 validation patients without an independent test cohort; its imaging diagnostic subset contains eight prespecified validation patients.
+
+Before release adjustments, 83 local Python files matched the deployed source archive. Packaging changes do not alter model or training logic; source identity and verification limits are documented in the [release notes](docs/RELEASE_V3_20261002.md). Historical documents and reports are not evidence of current V3 performance.
+
+Licensing is mixed: new original additions are MIT; adapted codec/DiT components retain CC BY-NC 4.0; other components retain their original notices. See [LICENSE](LICENSE), [licenses/](licenses), [source provenance](docs/SOURCES.md) and [multistage provenance](docs/MULTISTAGE_NETWORK_SOURCES.md).

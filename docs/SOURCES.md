@@ -1,46 +1,138 @@
-# 来源审计与改编边界
+# Source-level provenance and licensing
 
-本版是依据用户指定论文和已读取源码作出的研究适配，不宣称属于作者原版、已通过医学验证、已确立优先权或具有论文接收保证。
+Audit date: **2026-09-28**. This document distinguishes adapted source, actual
+runtime dependencies, and conceptual references. It does not claim to reproduce
+published benchmark numbers, download every repository, or use pretrained
+weights that were not provided.
 
-## CheXWorld
+## 1. User's V2 code — adapted source and compatibility target
 
-论文：Yue et al., “CheXWorld: Exploring Image World Modeling for Radiograph Representation Learning”, 用户提供 arXiv:2504.13820v1。
+Repository: https://github.com/cgznb/breast-world-model-v2-pcr
 
-- https://arxiv.org/abs/2504.13820
-- https://github.com/LeapLabTHU/CheXWorld
-- `models/jepa_add.py`，核验blob `32eb9b05e797cfb978d6f87a6a6c6e25ee97dc2c`：`IWM_Dual`的双context、双teacher、四监督复用。
-- `models/jepa.py`，此前核验blob `b62ba254c84320e12195dc4ad56b63e4f1e4d664`：EMA/stop-gradient/target feature规范化。
-- `models/jepa_vit_add.py`：conditional predictor的接口和空间/变换条件思路。
-- `models/jepa_vit_3d.py`，此前核验blob `cdc2a9b2ede3dca4485532c73fe0c65fecb3b521`：只提供PatchEmbed3D，不是完整三维CheXWorld。
-- `data_utils/world_model_transform.py`，此前核验blob `7462325dc0001bb0c34409a04636f701d5eb7d53`：记录augmentation parameters。
+Audited commit: `11220d38dd076439951d08928335d5fe4fa880b7`.
 
-对应本版：`observation_encoder.py`、`observation_views.py`、`observation_heads.py`、`observation_ssl.py`。采用独立实现的3D/三相适配，没有复制整套未审计许可的上游CheXWorld源码，也没有装作加载了其X-ray预训练权重。transform参数和三维网络配置均与原文有所不同，见DESIGN。
+| Audited file | Git blob SHA | Use here |
+|---|---|---|
+| `src/symm_world/encoder.py` | `5fba5f3ef1773f06d70edaa2c2749014393f3651` | `legacy/encoder.py`: same encoder parameter layout; no deterministic future-prior reuse |
+| `src/symm_world/layers.py` | `74827adb7d2fb3b0d38039d6babfaf0843b04147` | `legacy/layers.py`: Swin, ConvNeXt, QueryPool, mask and checkpoint building blocks |
+| `src/symm_world/velocity.py` | `d795bc2cc6978561e7cf9b5297ef3cd55d940c84` | `backbones.py`: full native U-Net layout and MONAI initialization |
+| `src/symm_world/codec.py` | `5a928b6692746ab0d3a722ed8075853dfeb318c3` | `legacy/codec.py`: matching continuous three-phase codec and frozen nearest-code decode |
+| `src/symm_world/training.py` | `ee9314c083ab2dbf8f0df3f878f1fc79b310f6ea` | Audit of original checkpoint format, stages and data boundaries; new trainer implemented separately |
+| `src/symm_world/data.py` | `d292f793653b061866fdf247d200caf1eff4b23d` | Existing manifest/view contracts; new prospective landmark adapter |
+| `pcr/src/tdn.py` | `b3ed51af2a40fb0bc612ba7aafdc1dcc435c7fa8` | Time-aware query readout and residual clinical-prior design reference; not a claim of checkpoint equivalence |
 
-## AlphaCell
+Original additions retain MIT; original Swin adaptation retains BSD-3-Clause;
+VQ remains CC BY-NC 4.0 (MeWM-derived), including source attribution to
+`cgznb/symm-fm` commit `92265d3b1749ae3b686f2089843c49da129fd4d2`,
+`workflows/first_post_three_phase/mewm_ispy2/vqgan.py`.
 
-用户提供预印本：“Towards building a World Model to simulate perturbation-induced cellular dynamics by AlphaCell”, doi:10.64898/2026.03.02.709176，2026年3月版本。
+## 2. MONAI — actual optional dependency and split-forward adaptation
 
-- https://doi.org/10.64898/2026.03.02.709176
-- Figure 2与Methods §2.2–2.3：Base Model观测重建、随后重建+ArcFace/DANN，独立Flow Model。
+https://github.com/Project-MONAI/MONAI/blob/1.5.1/monai/networks/nets/diffusion_model_unet.py
 
-仅借鉴观测重建、表征/动力学分工及可选semantic projector/域头思路。未核验其完整公开实现，不声称复制Mamba/MoE/OT-CFM/大decoder，也不转载PDF或原图。其单细胞结果不能当作MRI结果。
+Blob `cb0c69d033c3c7fc2e17758ded3ce0e95568e877`.
 
-## 用户原始三相SymmFlow
+The production MONAI backend instantiates the actual `DiffusionModelUNet` and
+uses its actual down/middle/up modules. Its forward traversal is split explicitly
+at the bottleneck to insert the semantic bridge. No monkeypatch or mutable
+forward hook is used. Version is pinned to **1.5.1**; upgrading needs a new parity
+audit. MONAI is Apache-2.0; license retained under `licenses/`.
 
-- https://github.com/cgznb/symm-fm
-- 核验commit `92265d3b1749ae3b686f2089843c49da129fd4d2`。
-- `workflows/first_post_three_phase/mewm_ispy2/three_phase_symmflow.py`，blob `6ca00eb2a2bdfd7039dbda8688a88674fd970179`。完整原文件参考副本在 `upstream_reference/`，本地计算git blob一致。
-- `configs/mewm_all_pairs_5090.yaml`，blob `1b9e9936c1c02f6c4d77415fbb7922629dbbbd08`。实际velocity为4尺度64/128/256/256，不沿用此前误写的3尺度配置作为“原网络”。
-- `three_phase_all_pairs_training.py` / `three_phase_all_pairs_data.py`：准备身份检查、source-only接口、pair-specific views、train/val缓存区别。
+A parity test compares the split forward against unmodified MONAI when installed.
+The delivery environment had no MONAI, so this test is **skipped**, not passed.
+No pretrained MONAI image weights are bundled.
 
-`codec.py`是原MeWM-derived VQ的可加载inference子集，CC BY-NC 4.0；不分发权重。`flow.py`保留sigma_min=0的原双分支数学路径。`scripts/three_phase_observation_bridge.py`在原class上明确添加source-only observation features，不改原VQ坐标。
+## 3. DiT — semantic block architecture adaptation
 
-原SymmFlow上游项目：https://github.com/caetas/SymmetricFlow 。本版针对用户仓库的paired longitudinal适配，不声称复制该上游全部任务。
+https://github.com/facebookresearch/DiT/blob/main/models.py
 
-## MONAI与包内3D模块
+Audited blob `c90eeba7b2eee18b40b2128045248795b4b38d91`, DiTBlock/FinalLayer.
+Paper: https://arxiv.org/abs/2212.09748
 
-- MONAI 1.5.1 `monai/networks/nets/diffusion_model_unet.py`：真实可选backend，https://github.com/Project-MONAI/MONAI/tree/1.5.1 。本包未安装MONAI的测试环境会skip，而不是偷换成native还声称MONAI通过。
-- torchvision Video Swin：shifted-window和padding/relative-position设计来源，https://github.com/pytorch/vision/blob/main/torchvision/models/video/swin_transformer.py 。保留BSD notice。
-- ConvNeXt：depthwise/LayerNorm/MLP/layer-scale block适配来源，https://github.com/facebookresearch/ConvNeXt/blob/main/models/convnext.py 。保留MIT notice；不声称使用预训练权重。
+`StateDiTBlock` adapts adaLN-Zero residual gating to semantic patient-state tokens,
+adds conditioned cross-attention, and uses PyTorch MHA instead of importing a
+natural-image timm backbone. Nine modulation vectors control self-attention,
+cross-attention and FFN. This is not pretrained DiT and not a complete DiT
+benchmark reproduction. The DiT-derived block retains CC BY-NC 4.0 attribution.
 
-`native` velocity是自包含的多尺度3D U-Net研究实现，不等同MONAI。Stage A使用ViT而不是Swin；Swin模块在native velocity bottleneck使用。没有在本版把REPA/Consistency-FM/V-JEPA或未来JEPA模块混进A。
+## 4. ConvNeXt and Video Swin — reused via audited V2 adaptations
+
+https://github.com/facebookresearch/ConvNeXt/blob/main/models/convnext.py
+
+Audited blob `74c1e9407bb4096a3b27127515573e32865b40f7`.
+Paper: https://arxiv.org/abs/2201.03545
+
+Depthwise convolution, channels-last LayerNorm, 4× pointwise expansion and layer
+scale are preserved in 3D. Source license MIT.
+
+https://github.com/pytorch/vision/blob/main/torchvision/models/video/swin_transformer.py
+
+The V2 attribution pins blob `1a198142874224a6766f321d9e0dfc97a01ecb43`.
+This package retains that existing adapted 3D window partition, cyclic mask,
+relative bias and padding-mask logic; it does not claim to load torchvision
+pretrained video weights. Source license BSD-3-Clause.
+
+## 5. I-JEPA — training reference, not copied full model
+
+https://github.com/facebookresearch/ijepa/blob/main/src/train.py
+
+Audited blob `0f387d6b293a7708037235f2bc34a8cb12953dc4`, target/context forward.
+Paper: https://arxiv.org/abs/2301.08243
+
+EMA stop-gradient targets and masked representation learning informed the
+representation stage. The new encoder is the user's 3D latent encoder, not the
+I-JEPA ViT. No I-JEPA weights or full training source are redistributed.
+
+## 6. REPA and iREPA — alignment reference
+
+https://github.com/sihyun-yu/REPA/blob/main/loss.py
+
+Audited blob `ae8f3f89217b074ca9909f41bf8c9829dd31e4fd`.
+Paper: https://arxiv.org/abs/2410.06940
+
+https://github.com/End2End-Diffusion/iREPA
+
+Audited README blob `923bda64dddbc1ce6755679f727b4bcd1171b86d` in the preceding
+architecture review. Paper: https://arxiv.org/abs/2512.10794
+
+The implementation uses a 3D convolution projection and explicit spatial
+centering/normalization with frozen target features. Its exact weighting and
+3D medical setting are task-specific, not a verified reproduction of iREPA's
+natural-image results. Global Pillar features cannot satisfy the dense alignment
+contract. No REPA/iREPA pretrained weights or full source trees are bundled.
+
+## 7. Flow Matching — path/solver mathematical reference
+
+https://github.com/facebookresearch/flow_matching/blob/main/flow_matching/path/affine.py
+
+Audited blob `81cb7ed31f2434d03424ea9a5571a36bfc9f2681`.
+Paper: https://arxiv.org/abs/2210.02747
+
+The affine-path endpoint/derivative conventions were checked against the official
+implementation. `flow.py` implements the user's joint symmetric path with
+matching semantic coordinates and differentiable Euler/Heun locally. It does not
+import or redistribute the full official CC-BY-NC flow_matching package.
+
+## 8. Brain-WM — problem/architecture context only
+
+https://github.com/thibault-wch/Brain-GBM-world-model
+
+Paper: https://arxiv.org/abs/2603.07562
+
+The joint imaging/clinical-task framing informed the earlier design discussion.
+No Show-o2/Qwen/Wan model, Brain-WM treatment planner, segmentation aligner or
+pretrained language-model weights were copied into this implementation. Calling
+this package a Brain-WM reproduction or an established causal treatment planner
+would be inaccurate.
+
+## New implementation
+
+The pure-function bidirectional bridge, source-only typed trajectory API,
+probability-marginalized outcome objective, grounding/energy integration,
+landmark data contract, new history/readout modules, training orchestration,
+strict migration and tests are task-specific implementation work. These are
+research components, not independently established methodological novelties.
+
+Public source review does not substitute for actual clinical training, numerical
+backend testing or a current novelty search before submission. All citations
+identify what was consulted; no benchmark superiority is inferred from them.

@@ -1,0 +1,111 @@
+schema: responsewm_v1
+encoder:
+  phase_channels: 8
+  stem_width: 48
+  widths:
+  - 96
+  - 192
+  - 384
+  depths:
+  - 2
+  - 2
+  - 4
+  heads:
+  - 3
+  - 6
+  - 12
+  window:
+  - 2
+  - 4
+  - 4
+  token_grid:
+  - 2
+  - 4
+  - 4
+  dim: 192
+  query_heads: 6
+  anatomy_tokens: 4
+  disease_tokens: 8
+  predictor_depth: 4
+  phase_mixer_depth: 2
+  drop_path: 0.0
+  checkpoint_blocks: true
+  mask_ratio: 0.5
+  phase_drop_probability: 0.25
+network:
+  backend: monai
+  time_basis: stage_index
+  use_future: true
+  channels:
+  - 128
+  - 256
+  - 384
+  num_res_blocks: 2
+  attention_heads: 8
+  history_depth: 3
+  semantic_depth: 4
+  readout_depth: 3
+  max_visits: 8
+  dropout: 0.1
+  coupling: true
+  readout_source: joint
+  checkpoint_blocks: true
+  pillar_dim: 1152
+  future_residual_limit: 3.0
+  clinical_prior: true
+loss:
+  reconstruction: 1.0
+  phase_difference: 0.1
+  masked_jepa: 1.0
+  variance: 0.1
+  covariance: 0.01
+  anatomy: 0.01
+  pillar: 0.1
+  dense_teacher: 0.0
+  segmentation: 0.0
+  kinetics: 0.0
+  biomarkers: 0.0
+  fm_image: 1.0
+  fm_state: 1.0
+  repa: 0.05
+  real_pcr: 1.0
+  marginal_pcr: 1.0
+  observed_pcr: 0.25
+  grounding: 0.1
+  energy: 0.05
+  prediction_grounding: 0.02
+  residual_l2: 0.01
+  per_sample_bce: false
+training:
+  seed: 20260928
+  device: cuda
+  precision: bf16
+  threads: 4
+  batch_size: 1
+  accumulation: 4
+  lr: 0.0001
+  joint_lr: 1.0e-05
+  weight_decay: 0.01
+  grad_clip: 1.0
+  warmup: 100
+  ema_decay: 0.995
+  representation_steps: 10000
+  flow_steps: 30000
+  readout_steps: 3000
+  joint_steps: 5000
+  validation_every: 100
+  checkpoint_every: 100
+  log_every: 10
+  validation_cases: 32
+  reverse_probability: 0.25
+  joint_image_scope: decoder
+  strict_determinism: false
+  validate_samples: 4
+  selection_generation_weight: 0.05
+  allow_synthetic: false
+sampling:
+  train_samples: 2
+  train_steps: 20
+  inference_samples: 8
+  inference_steps: 20
+  method: heun

@@ -1,3 +1,0 @@
-extends: ../cache_only.yaml
-observation:
-  global_weight: 0.0

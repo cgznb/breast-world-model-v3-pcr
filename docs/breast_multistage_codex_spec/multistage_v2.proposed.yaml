@@ -1,0 +1,215 @@
+# DESIGN INPUT ONLY. Codex must implement/register responsewm_v2 before execution.
+# Do not feed this file into the existing responsewm_v1 config loader.
+# All values are initial research settings, not validated best parameters.
+schema: responsewm_v2
+spec_version: "1.0"
+base_commit: 841458cb8e06e131af2a2248dc853f8476b2e0d0
+
+protocol:
+  time_basis: stage_index
+  canonical_stages: [0, 1, 2, 3]
+  transition_mode: sequential
+  expand_internal_grid: true
+  query_is_read_only: true
+  independent_query_rng: true
+  invalidate_forecasts_after_observation: true
+  use_full_future_plan_in_physiology: false
+  continuous_clinical_time_enabled: false
+  allow_synthetic: false
+
+data:
+  schema: responsewm_patient_trajectory_v2
+  infer_clinical_dim_from_manifest: true
+  infer_action_dim_from_manifest: true
+  current_cohort_expected_clinical_dim: 4
+  current_cohort_expected_action_dim: 0
+  missing_action_semantics: unobserved_not_untreated
+  preserve_existing_split: true
+  cohort_role: development_only
+  independent_test_available: false
+  normalize_from_train_only: true
+  permit_missing_followup: true
+  require_explicit_availability: true
+  phase_order: [pre_aqc0, first_post_aqc1, metadata_late]
+  latent_shape: [24, 8, 32, 32]
+
+encoder:
+  phase_channels: 8
+  stem_width: 48
+  widths: [96, 192, 384]
+  depths: [2, 2, 4]
+  heads: [3, 6, 12]
+  window: [2, 4, 4]
+  token_grid: [2, 4, 4]
+  dim: 192
+  query_heads: 6
+  dense_tokens: 32
+  anatomy_tokens: 4
+  disease_tokens: 8
+  phase_mixer_depth: 2
+  predictor_depth: 4
+  freeze_after_representation: true
+  ema_decay: 0.995
+  deep_jepa:
+    enabled: true
+    share_predictor_across_levels: true
+    level_weights_raw: [0.2, 0.3, 1.0]
+    normalize_level_weights: true
+    fused_deep_mix: 0.5
+    masked_weight: 1.0
+    visible_weight: 0.1
+    same_visit_targets_only: true
+
+state:
+  dim: 192
+  memory_tokens: 16
+  memory_anatomy_slots: 4
+  memory_disease_slots: 8
+  memory_global_slots: 4
+  observation_seed_depends_on_mri: true
+  assimilation_depth: 4
+  assimilation_heads: 6
+  assimilation_ffn_ratio: 4
+  assimilation_gate: sigmoid
+  assimilation_gate_bias: -2.0
+  missing_observation_identity: true
+  posterior_image_anchor: true_observation
+  preserve_model_vs_evidence_log: true
+  duplicate_event_policy: idempotent_or_conflict_error
+
+history:
+  depth: 6
+  dim: 192
+  heads: 6
+  ffn_ratio: 4
+  attention: event_block_causal
+  allow_bidirectional_within_event: true
+  dropout: 0.0
+  include_observation_tokens: true
+  cache_enabled: false # Enable only after full-prefix equivalence tests pass.
+
+conditioning:
+  queries: 4
+  resampler_depth: 2
+  dim: 192
+  heads: 6
+  ffn_ratio: 4
+  preserve_action_tokens: true
+  interval_causal_filter: true
+  include_source_target_stage: true
+  image_global_dim: 512
+  semantic_global_dim: 192
+  full_plan_for_outcome_only: true
+
+velocity:
+  backend: native
+  image_channels: [128, 256, 384]
+  image_num_res_blocks: 2
+  image_joint_in_channels: 48
+  image_joint_out_channels: 48
+  preserve_v1_image_parameter_layout: true
+  semantic_depth: 6
+  semantic_dim: 192
+  semantic_heads: 6
+  semantic_joint_tokens: 16
+  semantic_ffn_ratio: 4
+  semantic_modulation_groups: 12
+  cross_attention_groups: [patient_memory, interval_actions]
+  bridges:
+    - {location: down1_256, after_semantic_block: 2, channels: 256}
+    - {location: down2_384_pre_mid, after_semantic_block: 4, channels: 384}
+    - {location: mid_384, after_semantic_block: 6, channels: 384}
+  zero_init_bridge_gate: true
+  zero_init_bridge_projection: false
+  dropout: 0.0
+  checkpoint_blocks: true
+  monai_version_if_selected: "1.5.1"
+
+pcr:
+  shared_head: true
+  head_depth: 3
+  dim: 192
+  heads: 6
+  ffn_ratio: 4
+  dropout: 0.1
+  clinical_prior: true
+  fit_prior_on_train_only: true
+  stage_private_heads: false
+  interpretations: [observed_landmark, forecasted_state, marginal_current]
+  aggregate: mean_per_trajectory_probability
+  probability_loss: stable_logsumexp_marginal_bernoulli
+  enforce_monotonic_risk: false
+  generated_stage_marginal_enabled: false
+
+sampling:
+  train_samples: 2
+  validation_samples: 4
+  inference_samples: 8
+  train_steps: 20
+  inference_steps: 20
+  method: heun
+  clinical_time_is_not_flow_time: true
+  use_noise_ledger: true
+  noise_key_ignores_output_queries: true
+  future_control_changes_do_not_reseed_past: true
+
+training:
+  stages: [representation, flow, readout, joint]
+  device: cuda
+  precision: bf16
+  microbatch_size: 1
+  accumulation: 4
+  edge_sampling: balanced_edge_sample
+  adjacent_edge_types: [[0, 1], [1, 2], [2, 3]]
+  allow_bridge_auxiliary: true
+  bridge_auxiliary_relative_weight: 0.25
+  patient_normalized_prefix_loss: true
+  reverse_probability: 0.0
+  free_rollout_source_only: true
+  truncate_bptt: false
+  gradient_clip: 1.0
+  checkpoint_non_reentrant: true
+  lr_representation: 0.0001
+  lr_flow: 0.0001
+  lr_readout: 0.0001
+  lr_joint_pcr: 0.00001
+  lr_joint_new_state_semantic: 0.00001
+  lr_joint_image_middle_decoder: 0.000003
+  lr_joint_image_encoder: 0.0
+  budgets_are_upper_limits_not_quality_claims: true
+  require_real_size_preflight_before_full_training: true
+  start_full_training_automatically: false
+  flow_curriculum:
+    phase_fractions: [0.2, 0.3, 0.5]
+    maximum_rollout_hops: [1, 2, 3]
+    rollout_every_optimizer_steps: [0, 8, 8] # 0 = paired-only phase.
+    train_observation_updates: true
+
+loss:
+  fm_image: 1.0
+  fm_state: 1.0
+  spatial_alignment: 0.05
+  grounding: 0.1
+  distribution: 0.05
+  distribution_stage_mix: 0.5
+  distribution_joint_mix: 0.5
+  real_prefix_pcr: 1.0
+  marginal_pcr_start: 0.1
+  marginal_pcr_end: 0.5
+  assimilation_reconstruction: 0.1
+  generated_stage_marginal: 0.0
+  anatomy_invariance: 0.0
+  pillar_teacher: 0.0
+  enable_auxiliary_only_with_real_support: true
+  per_sample_same_label_bce: false
+  per_sample_strong_endpoint_mse: false
+
+validation:
+  separate_open_loop_and_online: true
+  group_by_explicit_observed_stage_ids: true
+  report_stage_metrics: true
+  report_rollout_depth_metrics: true
+  patient_cluster_bootstrap: true
+  choose_checkpoint_using_test: false
+  separate_training_and_evaluation_rng: true
+  archive_actual_executed_test_results: true

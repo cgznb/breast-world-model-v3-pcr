@@ -1,120 +1,90 @@
-# 输入契约和从原仓库迁移
+# 输入、监督与时间边界
 
-## 坐标和 dtype
+## 文件组织
 
-所有入库 latent 是原 `encode_continuous` 输出 `[24,D,H,W]`：依次为 pre、first-post、metadata-late，各 8 channels。NPY/NPZ 可用 float16/float32，读取转 float32；不得先套旧 FM z-score。NPZ latent 键为 `latent`。训练集 channel mean/std 在 A 内部拟合、随 encoder checkpoint 保存。B 直接复用 A 的坐标统计量。
+训练使用 `responsewm_manifest_v1` JSON，包含 schema、phase_order、clinical_features、action_features、latent_shape、vq_identity、time_basis、shared_grid_verified、cases。`synthetic=true` 只供测试且必须显式允许。每个 case 是一个患者在一个 landmark 的任务；同一患者的所有 case 只能属于同一个 train/val/test split。
 
-原缓存标准大小是 `[24,24,64,64]`。A crop 可小于完整 grid；B 的 source/target 形状必须匹配，不做隐式 resample。A 的 patch 必须整除完整输入尺寸和 crop。shape、相位顺序正确不代表完成了三相或纵向配准。
+每个连续 latent 文件为 `.npy` 的 `[24,D,H,W]` 数组，或 `.npz` 中键名 `latent` 的同形数组。必须是**原始连续 VQ latent**，不是离散 codebook ID、不是已标准化两次的张量，也不是直接 MRI 像素。三相顺序固定为 `pre_aqc0, first_post_aqc1, metadata_late`。当前生产尺寸为 `[24,8,32,32]`，测试使用缩小空间。
 
-## A visits.json 示例
+`vq_identity` 建议严格写为 `sha256:<VQ权重文件SHA256>`。编码与解码命令均使用这个身份核对匹配 codec。`shared_grid_verified` 与每个 input 的 `source_only_geometry` 是必须真实核验的声明，不是软件推断出的事实。
 
-```json
-{
-  "schema": "three_phase_visits_v3",
-  "phase_order": ["pre_aqc0", "first_post_aqc1", "metadata_late"],
-  "latent_channels": 24,
-  "codec_id": "sha256:实际VQ文件SHA256",
-  "visits": [
-    {
-      "id": "patient001_T0_canonical",
-      "patient_id": "patient001",
-      "visit_id": "patient001_T0",
-      "stage": "T0",
-      "split": "train",
-      "latent_path": "/absolute/path/T0.npy",
-      "valid_path": "/absolute/path/T0_valid.npy",
-      "geometry": {"latent_to_lps": [[0,0,2,0],[0,2,0,0],[8,0,0,0],[0,0,0,1]]},
-      "phase_alignment_verified": true,
-      "source_available_grid": true,
-      "support_assumed": false,
-      "phenotype_label": -1,
-      "domain_label": -1
-    }
-  ]
-}
-```
-
-示例 affine 只是格式演示，不得照抄为真实数据坐标。`latent_to_lps` 将数组索引 `(d,h,w,1)` 映射为 LPS 坐标。也可传原 workflow `geometry` 的 `shape_zyx / spacing_xyz_mm / origin_lps_mm / direction_lps`；实现按 4× VQ 下采样和 cell center 构造代表性 affine，不宣称其等于卷积完整 receptive field 的中心。真实复杂重采样时应显式提供经过验证的 affine。
-
-所有路径可绝对或相对当前 manifest。记录的白名单是 `data.py:VISIT_KEYS`；不会自动把任意字段拿来训练。一个 patient/visit 只能保留一个 A 样本，多个 crop 在训练时从该数组采样。不能把一个 visit 在 all-pairs 里出现的多份 view 当作多个独立患者样本。
-
-`valid_path` 为同 latent lattice 的 `[1,D,H,W]` 或 `[3,D,H,W]`，数值在0–1，1表示有可信采集覆盖。不是肿瘤 mask。无 valid 时显式假设全覆盖，audit 会报告，不称作已核验。A token validity 依据三相交集；默认 patch 平均覆盖≥0.95 才保留。某 crop 需要至少2个有效 patch，以同时产生 visible context 和 masked target。
-
-`stage` 是标识和 B 配对元数据，**不喂给 A encoder/predictor**。pCR、下一访视 latent、未来治疗、病理/生存字段在 A 记录中不允许。
-
-## 当前访视辅助监督
-
-`kinetic_path`：已在 latent lattice 的 `[2,D,H,W]`，键 `kinetics`。必须指定 `kinetic_provenance:"measured_same_visit_shared_normalization"`，来源是同访视的 early-pre / late-early 图像信号差。禁止将 VQ feature differences 或 decoder proxy 填在这个实测字段。
-
-`segmentation_path`：同 lattice `[1,D,H,W]`，键 `segmentation`，值0–1。全零有效；缺失使用无该字段，而不是生成零mask。
-
-`phenotype_label`：当前访视可信分组的整数索引；`-1`代表缺失。配置中声明 `phenotype_definition`、`phenotype_classes`。本包不自动定义 HR/HER2 分组的临床含义，不接收以患者ID或未来pCR冒充当前phenotype。
-
-`domain_label`：可信 scanner/site 类别索引；`-1`缺失。配置必须明确 `domain_definition: scanner` 或 `site`；不要用phase/treatment/visit作技术域。DANN只在确有至少两类train监督时启用。
-
-`image_path`：已按匹配 VQ 预处理的三相 `[3,D_img,H_img,W_img]`，NPZ键 `images`，image dims通常是latent的4倍。还须有：
-
-```json
-"image_normalization": {
-  "stored": "normalized",
-  "shared_across_phases": true,
-  "mean": 真实共享均值,
-  "std": 真实共享标准差
-}
-```
-
-这是格式示意，不是合法可复制的JSON数值。不要用分别phase z-score后的图像声称其仍是共同物理信号尺度。普通 cache 训练不读取 image_path；image-backed准备工具才会读取并校验它。
-
-## B pairs.json
+## 每个 case
 
 ```json
 {
-  "schema": "three_phase_pairs_v3",
-  "phase_order": ["pre_aqc0", "first_post_aqc1", "metadata_late"],
-  "latent_channels": 24,
-  "codec_id": "sha256:实际VQ文件SHA256",
-  "pairs": [
-    {
-      "id": "patient001_T0_T1",
-      "patient_id": "patient001", "split": "train",
-      "source": {"完整的source visit记录": "与A相同的记录格式"},
-      "target": {"完整的target visit记录": "与A相同的记录格式"},
-      "conditions": {
-        "stage_i": "T0", "stage_j": "T1",
-        "interval_verified": false,
-        "treatment_arm": "verified_arm", "action_segments": []
-      }
-    }
-  ]
-}
-```
-
-上面 source/target 需替换成完整 visit object，不是实际可运行的patient数据。转换器会自动生成正确结构。没有配对的 observation 不需要出现在 B。一个 patient 的所有 records 必须同一个split。A训练患者不能进入B验证/测试，A验证患者不能作为B独立测试患者。
-
-允许条件：treatment_arm, hr_status, her2_status, mammaprint, menopausal_status, stage_i, stage_j, age, delta_days, interval_verified, action_segments。每个 action segment 严格包含 drug,start,end,dose,known_at_source；只接收在预测源时点已知的计划。未核验 interval 的 delta_days 被删除，不用0或访视编号假装实际日期。类别词表、数值统计只在 B train 拟合。
-
-## legacy converter 注意事项
-
-转换器读取 `admitted_inventory.json` 的 visits/views/pairs。A按(patient,visit)去重，优先选source_visit_id==visit_id的原 view；B保留对应pair的原source/target view，因此可能和A使用不同crop但使用同一个VQ空间。验证集reference若含images/support，会从support构造保守的4× latent有效覆盖。训练集没有reference不会自动产生“实测kinetics”。
-
-可提供 `--qc /path/to/qc.json`，格式：
-
-```json
-{"views": {
-  "原始view_id": {
-    "phase_alignment_verified": true,
-    "source_available_grid": true,
-    "valid_path": "相对qc文件的valid.npy",
-    "image_path": "相对qc文件的images.npy",
-    "image_normalization": {"stored":"normalized","shared_across_phases":true,"mean":0.0,"std":1.0}
+  "id": "local_case_T0",
+  "patient_id": "local_pseudonymous_patient",
+  "split": "train",
+  "input": {
+    "landmark_day": 0,
+    "observed": [
+      {"latent": "/path/to/T0.npy", "day": 0, "available_at": 0}
+    ],
+    "clinical": [47, 1, null],
+    "clinical_known_at": [0, 0, null],
+    "queries": [
+      {"day": 1, "known_at": 0, "actions": [1, 0], "actions_known_at": [0, 0]},
+      {"day": 2, "known_at": 0, "actions": [0, 1], "actions_known_at": [0, 0]},
+      {"day": 3, "known_at": 0, "actions": [0, 1], "actions_known_at": [0, 0]}
+    ],
+    "source_only_geometry": true
+  },
+  "target": {
+    "pcr": 1,
+    "observed_auxiliary": [null],
+    "future": [
+      {"latent": "/path/to/T1.npy", "day": 1, "anatomy_comparable": false},
+      null,
+      {"latent": "/path/to/T3.npy", "day": 3, "anatomy_comparable": false}
+    ]
   }
-}}
+}
 ```
 
-不要为了通过检查随意把布尔项改成true。若配准/定位不可验证，保留false并将任务界定为ROI表观预测；不得称作真实空间肿瘤生长。source_only生成不读取future文件，但无法逆转原预处理中已经使用未来中心定位的问题。
+这个例子是 **stage_index**，1/2/3 不是天数。示例数字不对应用户队列，不是治疗编码建议。对于 `calendar_days`，每个字段应改用实际合法日数。默认 landmark 恰好为最后一项已观察 MRI 的 day；本版不支持没有新 MRI 的任意中间日期观察更新。
 
-原inventory不存在的孤立访视不能由转换器恢复。你可从原访视清单补充到独立A manifest；本版Dataset对仅一个visit的患者没有限制。
+临床/治疗向量维度与顺序由 manifest 字段名决定，不要求固定 17/8 维。复用旧分类流程时应使用你实际的 `TABULAR_FEATURE_NAMES` 顺序及相同含义；示例字段不能直接冒充原 17 项。类别字段先由训练折确定合法 one-hot 或数值编码，再写成数值向量。本包不把任意整数类别编码假定为连续病理程度。
 
-## augmentation bank
+`actions[j]` 定义为当前计划的“前一个查询/最后观察到第 j 个查询”区间治疗特征。可以编码当前可获知的药物多热、剂量或其他明确含义变量。字段名、单位、是否预定/已执行、缺失规则由研究者写入数据制作记录。本包没有从自由文本自动识别药物、没有调用 LLM、没有自动补全未知周期。
 
-`prepare-sidecars`生成的每条augmentation包含latent_path、4维action、transform_space=image、相同visit_id、base_latent_sha256和匹配codec_id。runtime会校验这些字段和base内容身份。action描述gain-1、offset、noise_std、blur_sigma；没有使用治疗/临床时间。注意本实现是可追溯的影像增强，不是扫描仪仿真模型。
+可用值的 known_at 必须不晚于 landmark；未知值为 null，其 mask=false，不是数值零。未来计划改变但在 T0 不知情，不能把最终执行信息填入 T0。查询时点已指定并不意味着该次扫描一定实际完成；若缺失，target 槽为 null，模型仍可预测。
+
+## 缺失与配对
+
+模型张量层允许已观察历史中有空位，使用最大有效索引而非 `count-1` 找最后观察；manifest 使用实际存在的有序列表，由 batch padding 产生空位。未来请求必须为连续前缀，而未来监督 mask 可以有洞，两者不能混用。
+
+例如仅 T0/T3 真实存在而请求 T1/T2/T3：可以监督最终 pCR、最终分布和 T3 状态；但不存在 T1→T2、T2→T3 的相邻真实 FM 配对。应另导出只查询 T3 的 direct-interval case，以便用 T0→T3 做配对生成训练。B 阶段患者采样器只选择具备合法配对的 case；D 阶段没有配对的患者仍可贡献可用的结局监督。不要创建假的中间图像。
+
+不对真实随访日数与查询日数做隐式最近邻匹配。要预测按治疗阶段的图像但不知未来实际日数，使用 `stage_index`。这种模式不支持把输出解释为任意真实天数的精确预测。
+
+## 训练/预测隔离
+
+训练数据加载返回 `(ForecastInput, Supervision)`，后者独立包含真实未来、标签与辅助信息。`model.forecast()` 的签名只接受前者，没有 target、标签、patient_id、teacher forcing 参数。
+
+部署 `responsewm_request_v1` 只包含 schema、特征名、相位、latent_shape、VQ身份、time_basis 和 input。由 `scripts/export_request.py` 导出，它不包含 target 或 patient_id。预测器不会为推理拟合 normalization，也不会去打开未来 latent 文件。
+
+标签默认二元最终 pCR；缺失用 null。软件不决定 pCR 的病理定义。论文中应明确 breast-only/ypT0/is ypN0 等实际结局口径与标签来源，不能混用。
+
+## 辅助 sidecar
+
+每个真实 visit 可有一个 `.npz`，由 `target.observed_auxiliary` 或 `target.future[j].auxiliary` 引用。键名限制为以下各项；没有数组时该项 loss 不执行。
+
+| 键 | 形状（生产） | 含义 |
+|---|---|---|
+| pillar | `[1152]` | 已冻结、经过原规范预处理的真实 MRI 的全局 Pillar 特征 |
+| dense_teacher | `[32,192]` | 与当前 `(2,4,4)` token 网格对应的真实空间特征 |
+| segmentation / segmentation_mask | `[1,2,4,4]` / 可广播有效 mask | 已核验对齐的软分割监督；全零病灶合法 |
+| kinetics / kinetics_mask | `[3,2,4,4]` / 有效 mask | 三项明确测量的相位关系/指标，必须记录预处理含义 |
+| biomarkers / biomarkers_mask | `[4]` / `[4]` | 自己定义并核验的四个可用测量；不是自动生成的生物标志物 |
+
+全局 Pillar 向量不能复制 32 次作为 dense_teacher。监督 mask 的 true 表示有测量/有效覆盖，而不是病灶阳性。不要使用 pCR 标签生成“预测图像应该多小”的分割伪标签。
+
+外部教师编码、空间注册和低分辨率目标制作依赖你的原数据预处理；本包不会静默自动匹配任意教师权重或空间单位。已经导出的原 Pillar 特征可直接写成 sidecar，代码将核对维度和 finite 值。
+
+## 归一化与分折
+
+latent 均值/方差仅用训练折的去重真实 visit 计算，包括训练患者的后续影像；这是合法训练监督，不是推理读取测试未来。clinical/action 数值统计只用训练折已知值。prior logistic regression 只用训练折标签，按患者调整重复 landmark 权重。
+
+manifest 内容和所有 latent/sidecar 的 SHA256 写入 run。test 不参与优化和 checkpoint 选择。不同路径的重复患者、外部预训练接触、源代码中的私有标签等无法仅靠文件路径一致性检测；需要独立审计。
+
+为保证声明与统计一致，当前 evaluate 只接收训练时同一个 manifest 的指定 split。外部独立队列可以通过严格 input-only request 逐例预测后用指标函数评价；本版没有宽松自动合并外部队列的命令。

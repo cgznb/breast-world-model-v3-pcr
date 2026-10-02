@@ -1,0 +1,116 @@
+{
+  "schema": "responsewm_manifest_v1",
+  "phase_order": [
+    "pre_aqc0",
+    "first_post_aqc1",
+    "metadata_late"
+  ],
+  "clinical_features": [
+    "age",
+    "hr_positive",
+    "her2_positive"
+  ],
+  "action_features": [
+    "taxane_planned",
+    "anthracycline_planned"
+  ],
+  "latent_shape": [
+    24,
+    8,
+    32,
+    32
+  ],
+  "vq_identity": "sha256:REPLACE_WITH_MATCHING_VQ_FILE_SHA256",
+  "time_basis": "stage_index",
+  "shared_grid_verified": false,
+  "synthetic": false,
+  "cases": [
+    {
+      "id": "example_at_T0",
+      "patient_id": "example_patient",
+      "split": "train",
+      "input": {
+        "landmark_day": 0,
+        "observed": [
+          {
+            "view_id": "REPLACE_T0_VIEW_ID",
+            "day": 0,
+            "available_at": 0
+          }
+        ],
+        "clinical": [
+          47,
+          1,
+          null
+        ],
+        "clinical_known_at": [
+          0,
+          0,
+          null
+        ],
+        "queries": [
+          {
+            "day": 1,
+            "known_at": 0,
+            "actions": [
+              null,
+              null
+            ],
+            "actions_known_at": [
+              null,
+              null
+            ]
+          },
+          {
+            "day": 2,
+            "known_at": 0,
+            "actions": [
+              null,
+              null
+            ],
+            "actions_known_at": [
+              null,
+              null
+            ]
+          },
+          {
+            "day": 3,
+            "known_at": 0,
+            "actions": [
+              null,
+              null
+            ],
+            "actions_known_at": [
+              null,
+              null
+            ]
+          }
+        ],
+        "source_only_geometry": false
+      },
+      "target": {
+        "pcr": null,
+        "observed_auxiliary": [
+          null
+        ],
+        "future": [
+          {
+            "view_id": "REPLACE_T1_VIEW_ID",
+            "day": 1,
+            "anatomy_comparable": false
+          },
+          {
+            "view_id": "REPLACE_T2_VIEW_ID",
+            "day": 2,
+            "anatomy_comparable": false
+          },
+          {
+            "view_id": "REPLACE_T3_VIEW_ID",
+            "day": 3,
+            "anatomy_comparable": false
+          }
+        ]
+      }
+    }
+  ]
+}

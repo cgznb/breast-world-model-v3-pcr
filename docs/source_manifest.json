@@ -1,0 +1,65 @@
+{
+  "schema": "responsewm_source_manifest_v2",
+  "audit_date": "2026-09-29",
+  "scope": "multistage v2 additions; inherited code attribution remains in SOURCES.md",
+  "new_pretrained_weights_downloaded": false,
+  "sources": [
+    {
+      "upstream_repository": "https://github.com/Project-MONAI/MONAI",
+      "upstream_commit": "9c6d819f97e37f36c72f3bdfad676b455bd2fa0d",
+      "upstream_version": "1.5.1",
+      "upstream_path": ["monai/networks/nets/diffusion_model_unet.py"],
+      "upstream_license": "Apache-2.0",
+      "local_path": ["src/responsewm/backbones.py"],
+      "copied_or_adapted": "runtime_dependency_and_split_forward_adaptation",
+      "changes": "Traverse original down-block residual/attention/downsampler modules separately so bridges update skips and deeper levels; unchanged underlying MONAI parameters.",
+      "verification": "Installed pinned module source read; exact tag commit resolved with GitHub API; original unsplit vs zero-bridge split parity passed in tests/test_backbones_v2.py with MONAI 1.5.1."
+    },
+    {
+      "upstream_repository": "https://github.com/facebookresearch/DiT",
+      "upstream_commit": "ed81ce2229091fd4ecc9a223645f95cf379d582b",
+      "upstream_path": ["models.py", "LICENSE.txt"],
+      "upstream_license": "CC-BY-NC-4.0",
+      "local_path": ["src/responsewm/backbones.py", "src/responsewm/migration_v2.py"],
+      "copied_or_adapted": "task_specific_adaptation_of_existing_DiT_derived_block",
+      "changes": "Four independent self/history/action/FFN residuals use twelve modulation vectors; PyTorch MHA and 3D joint latent dynamics replace natural-image DiT. Explicit old-nine to new-twelve semantic migration.",
+      "verification": "Pinned DiTBlock/FinalLayer/init and license read through GitHub API; delayed gradient-opening, deterministic field, checkpoint parity and semantic-role migration tests passed."
+    },
+    {
+      "upstream_repository": "https://github.com/facebookresearch/vjepa2",
+      "upstream_commit": "204698b45b3712590f06245fbfba32d3be539812",
+      "upstream_path": ["app/vjepa_2_1/models/predictor.py", "app/vjepa_2_1/train.py", "LICENSE"],
+      "upstream_license": "MIT",
+      "local_path": ["src/responsewm/representation.py", "src/responsewm/legacy/encoder.py"],
+      "copied_or_adapted": "conceptual_reference_with_original_task_specific_implementation",
+      "changes": "Same-visit multi-level teacher targets, latent-space masking before convolution, shared existing masked predictor, level projections and separately weighted masked/visible terms. No upstream source or video weights copied.",
+      "verification": "Pinned predictor, teacher forward and loss code plus license read through GitHub API; masked prediction and teacher/online gradient tests passed."
+    },
+    {
+      "upstream_repository": "https://github.com/facebookresearch/vjepa2",
+      "upstream_commit": "204698b45b3712590f06245fbfba32d3be539812",
+      "upstream_path": ["src/models/ac_predictor.py", "src/models/utils/modules.py", "LICENSE"],
+      "upstream_license": "MIT",
+      "local_path": ["src/responsewm/temporal_v2.py", "src/responsewm/conditioning.py"],
+      "copied_or_adapted": "conceptual_reference_only",
+      "changes": "Local implementations follow the supplied medical specification: event-block causal attention and legal interval conditioning. Robot action vectors, frame layout, RoPE and the official predictor are not imported or copied.",
+      "verification": "Pinned action/state/frame interleaving and build_action_block_causal_attention_mask code inspected through GitHub API. The local implementation uses PyTorch attention with its own event contract; no upstream benchmark equivalence claimed."
+    },
+    {
+      "upstream_repository": "https://github.com/danijar/dreamerv3",
+      "upstream_commit": "e3f02248693a79dc8b0ebd62c93683888ddaccfe",
+      "upstream_path": ["dreamerv3/rssm.py", "LICENSE"],
+      "upstream_license": "MIT",
+      "local_path": ["src/responsewm/state.py", "src/responsewm/model_v2.py", "src/responsewm/rollout.py"],
+      "copied_or_adapted": "conceptual_reference_only",
+      "changes": "Used to audit the distinction between actual-observation updates and imagined state progression. The local medical lifecycle, evidence ledger and coupled image/semantic flow are original task-specific implementations. No JAX RSSM, actor, reward, categorical latent posterior or Dreamer weights copied.",
+      "verification": "Pinned initial, observe/_observe, imagine and loss methods plus license read through GitHub API. Learned observation correction is not claimed to be a variational or exact Bayesian posterior."
+    }
+  ],
+  "inherited_sources": {
+    "audit_document": "docs/SOURCES.md",
+    "user_v2_commit": "11220d38dd076439951d08928335d5fe4fa880b7",
+    "mewm_derived_vq_commit": "92265d3b1749ae3b686f2089843c49da129fd4d2",
+    "note": "Inherited provenance is retained from the previous source audit; historical Git blob IDs are not presented as commit IDs or new upstream reads."
+  }
+}

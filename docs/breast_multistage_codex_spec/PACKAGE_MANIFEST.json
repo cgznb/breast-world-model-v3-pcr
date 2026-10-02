@@ -1,0 +1,11 @@
+{
+  "package": "breast_multistage_codex_spec",
+  "version": "1.0",
+  "files": {
+    "BREAST_MULTISTAGE_CODEX_SPEC_ZH.md": "32cf02dd7cb3ee63c57f2b40b00dbf06b1e970b112c35c6d5888a52dfc4b6b2a",
+    "CODEX_START_HERE.txt": "6ca65970fc82774006791be4b74cd9108d09f559b2ec6cecaa7cdc0480a0bcf7",
+    "DOCUMENT_VALIDATION.json": "64db57ecea42bd795cacd94a5bd4e4c42932387e701d11d96ff6206a32dcf9ff",
+    "README.md": "e1cffa14f2118e08d752fd23d8ec3abfbd2ab6edf3f4444fccdf2f02ffef428a",
+    "multistage_v2.proposed.yaml": "2a608773f09cf05f53c878cd1f76391a5d1b977f269f4ab1f22abbf87376b809"
+  }
+}

@@ -1,0 +1,61 @@
+{
+  "release": "v3.0.0-20261002",
+  "date": "2026-10-02",
+  "scope": "Code release; engineering tests only; no completed clinical performance claim",
+  "pytest": {
+    "passed": 149,
+    "skipped": 2,
+    "failed": 0,
+    "skip_reason": "optional MONAI backend unavailable",
+    "seconds": 53.79
+  },
+  "synthetic_four_stage_smoke": [
+    {
+      "stage": "representation",
+      "completed": true,
+      "optimizer_steps": 2
+    },
+    {
+      "stage": "flow",
+      "completed": true,
+      "optimizer_steps": 3,
+      "selected_step": 3
+    },
+    {
+      "stage": "readout",
+      "completed": true,
+      "optimizer_steps": 2,
+      "selected_step": 0
+    },
+    {
+      "stage": "joint",
+      "completed": true,
+      "optimizer_steps": 2,
+      "selected_step": 0
+    }
+  ],
+  "source_comparison": {
+    "python_files": 83,
+    "model_training_evaluation_logic_identical": true,
+    "changed_python_files": [
+      "src/responsewm/__init__.py"
+    ],
+    "reason": "package version metadata 0.1.0 -> 3.0.0"
+  },
+  "deployed_snapshot_comparison": {
+    "archive": "source_v3_final.tar.gz",
+    "sha256": "3d312cacddf0cfd702b2927e2908f38431e4078e4f9e2cbbcfa6ad6ef2b2496a",
+    "python_files_checked": 83,
+    "mismatches": 0
+  },
+  "remote_live_source_verified": false,
+  "remote_verification_note": "SSH endpoint refused connection on release date; comparison uses the saved final deployment source archive.",
+  "packaging": {
+    "wheel_build": "passed",
+    "sdist_build": "passed",
+    "isolated_target_install": "passed",
+    "installed_v3_import_and_cli": "passed",
+    "wheel_third_party_licenses": "passed",
+    "sdist_config_scripts_docs": "passed"
+  }
+}

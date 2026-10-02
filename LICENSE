@@ -1,24 +1,24 @@
 License scope
 =============
-The newly authored observation-v3 implementation is provided under the MIT
-license below, except for the separately attributed materials listed here.
 
-- src/symm_observation/codec.py is an adapted inference subset of the
-  MeWM-derived VQ implementation in cgznb/symm-fm. It remains CC BY-NC 4.0.
-- upstream_reference/three_phase_symmflow.py is the original source reference
-  from the first_post_three_phase workflow of cgznb/symm-fm. The upstream
-  workflow's CC BY-NC 4.0 terms are retained.
-- src/symm_observation/layers.py retains the attribution notices for the
-  ConvNeXt/torchvision-derived building-block adaptations under their original
-  MIT/BSD terms. See licenses/.
+New original additions are provided under the MIT License below.
+Existing adaptations retain their original notices:
+- src/responsewm/legacy/codec.py: CC BY-NC 4.0, MeWM-derived via cgznb/symm-fm
+  and cgznb/breast-world-model-v2-pcr. See licenses/CODEC_NOTICE.md.
+- StateDiTBlock in src/responsewm/backbones.py: DiT-derived architecture
+  adaptation, CC BY-NC 4.0. See licenses/DIT_NOTICE.md.
+- Shifted-window attention in legacy/layers.py: torchvision BSD-3-Clause.
+- MONAI split-forward adaptation in backbones.py: Apache License 2.0.
+- ConvNeXt-derived building blocks: original MIT notices retained.
 
-The MIT license on new code does NOT remove the noncommercial restriction on
-MeWM-derived components or grant any rights to datasets and pretrained weights.
-The attached publications and third-party pretrained weights are not included.
+These exceptions are not relicensed by this file. The complete mixed package
+contains non-commercial components. No license to patient data or external
+pretrained weights is granted. Source URLs and changes are in docs/SOURCES.md.
 
 MIT License
-===========
-Copyright (c) 2026 Observation-v3 contributors
+
+Copyright (c) 2026 Symm-FM World V2 contributors
+Copyright (c) 2026 ResponseWM contributors
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
